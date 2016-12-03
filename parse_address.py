@@ -139,7 +139,7 @@ def parse_address(input_filename, output_filename=""):
 
 		# 本行工作文件输出
 		if output_filename:
-			output_file.writelines(line_1[0])
+			output_file.writelines(line_1)
 			output_file.writelines(line_2)
 
 	if output_filename:
