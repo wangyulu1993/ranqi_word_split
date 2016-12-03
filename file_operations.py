@@ -6,7 +6,13 @@
 import codecs
 
 def read_file_to_array(input_filename):
-	return codecs.open(input_filename, encoding="utf-8").readlines()
+	lines = codecs.open(input_filename, encoding="utf-8").readlines()
+	try:
+		lines.remove("\r\n")
+	except ValueError:
+		pass
+	return lines
+
 
 def write_file_from_array(array_to_write, output_filename):
 	output_file = codecs.open(output_filename, mode="w", encoding="utf-8")

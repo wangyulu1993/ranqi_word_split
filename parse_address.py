@@ -3,7 +3,7 @@
 # 分析地址函数
 # Wang Yulu, 18810656098@163.com
 
-import sys, re, pprint
+import sys, re
 
 import address_dict
 
@@ -25,6 +25,10 @@ def parse_address(input_filename, output_filename=""):
 
 	# 打开文本文件,按行读入所有地址到 input_lines 数组
 	input_lines = read_file_to_array(input_filename)
+
+	# 打开输出文件
+	if output_filename:
+		output_file = open(output_filename,'w')
 
 	# 处理主循环
 
@@ -100,47 +104,46 @@ def parse_address(input_filename, output_filename=""):
 				break
 
 		# 5. 分析小区
-		if result[working_index]['~街道和小区'] and result[working_index]['街道']:
 			# 街道和小区部分,去除街道即为小区
-			result[working_index]['小区'] = result[working_index]['~街道和小区'].replace(result[working_index]['街道'], "")
+		result[working_index]['小区'] = result[working_index]['~街道和小区'].replace(result[working_index]['街道'], "")
 
 		# 6. 分析单元和门牌
-		if result[working_index]['~单元和门牌']:
-			# 去除无意义开头标记
-			result[working_index]['~单元和门牌'] = remove_initial_char_if_exist(result[working_index]['~单元和门牌'], "#" )
-			result[working_index]['~单元和门牌'] = remove_initial_char_if_exist(result[working_index]['~单元和门牌'], "-" )
+		# 去除无意义开头标记
+		result[working_index]['~单元和门牌'] = remove_initial_char_if_exist(result[working_index]['~单元和门牌'], "#" )
+		result[working_index]['~单元和门牌'] = remove_initial_char_if_exist(result[working_index]['~单元和门牌'], "-" )
 
-			# 如果未找到"-"标记,全计入门牌
-			if result[working_index]['~单元和门牌'].find("-") == -1:
-				result[working_index]['门牌'] = result[working_index]['~单元和门牌']
-			# 如果找到"-"标记,分隔
-			else:
-				result[working_index]['单元'] = result[working_index]['~单元和门牌'].split("-")[0]
-				result[working_index]['门牌'] = result[working_index]['~单元和门牌'].split("-")[1]
+		# 如果未找到"-"标记,全计入门牌
+		if result[working_index]['~单元和门牌'].find("-") == -1:
+			result[working_index]['门牌'] = result[working_index]['~单元和门牌']
+		# 如果找到"-"标记,分隔
+		else:
+			result[working_index]['单元'] = result[working_index]['~单元和门牌'].split("-")[0]
+			result[working_index]['门牌'] = result[working_index]['~单元和门牌'].split("-")[1]
 
-		# 本行工作临时输出
-		print('\n\n[原文]', input_lines[working_index],
-			  '\n[区]', result[working_index]['区'],
-			  '\n[街道]', result[working_index]['街道'],
-			  '\n[小区]', result[working_index]['小区'],
-			  '\n[楼号]', result[working_index]['楼号'],
-			  '\n[单元]', result[working_index]['单元'],
-			  '\n[门牌]', result[working_index]['门牌'],
-			  '\n\n[附加信息]',
-			  '\n[~街道和小区]', result[working_index]['~街道和小区'],
-			  '\n[~单元和门牌]', result[working_index]['~单元和门牌'],
-			  '\n[working_line]', working_line,
-			  '\n'
-			  )
+		# 本行工作结果输出
+		line_1 = '\n\n[原文]\n' + input_lines[working_index]\
+				 + '\n[区]' + result[working_index]['区']\
+				 + '\n[街道]' + result[working_index]['街道']\
+				 + '\n[小区]' + result[working_index]['小区']\
+				 + '\n[楼号]' + result[working_index]['楼号']\
+			     + '\n[单元]' + result[working_index]['单元']\
+			     + '\n[门牌]' + result[working_index]['门牌']
 
-	# 屏幕输出
-	# pprint.pprint(result, indent=4)
+		line_2 =  '\n\n[附加信息]'\
+				  + '\n[~街道和小区]' + result[working_index]['~街道和小区']\
+				  + '\n[~单元和门牌]' + result[working_index]['~单元和门牌']\
+				  + '\n[working_line]' + working_line\
+				  + '\n'
 
-	# 文件输出
-	if (output_filename != ""):
-		with open(output_filename,'w') as output_file:
-			pprint.pprint(result, stream=output_file, indent=4)
-			print("*** Parsed results have been written into file " + output_filename + ". ***\n")
+		print(line_1, line_2)
+
+		# 本行工作文件输出
+		if output_filename:
+			output_file.writelines(line_1[0])
+			output_file.writelines(line_2)
+
+	if output_filename:
+		print("*** Parsed results have been written into file " + output_filename + ". ***\n")
 
 # 命令行运行入口函数
 # 支持通过命令行下形如 python parse_address input_filename output_filename 直接调用本函数
