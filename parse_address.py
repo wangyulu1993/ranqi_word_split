@@ -3,32 +3,43 @@
 # 分析地址函数
 # Wang Yulu, 18810656098@163.com
 
-import sys, pprint
+import sys, re, pprint
 
 import address_dict
 
-from file_operations import read_file_to_array, write_file_from_array
+from file_operations import read_file_to_array
 
+
+# 删除字符串首的特定字符
+def remove_initial_char_if_exist(string, char):
+	if string[:1] == char:
+		return string[1:]
+	return string
 
 
 # 分析地址函数
-
 def parse_address(input_filename, output_filename=""):
 
-	result = []
-	working_index = -1
+	result = [] # 最终结果数组
+	working_index = -1 # 正在处理的行index
 
-	# 打开文本文件,按行读入
+	# 打开文本文件,按行读入所有地址到 input_lines 数组
 	input_lines = read_file_to_array(input_filename)
 
-	# 处理
-	for working_line in input_lines:
+	# 处理主循环
+
+	for input_line in input_lines:
+
+		# working_line 为当前正在处理的地址,可能随处理而增删内容
+		working_line = input_line
+
+		# working_index 为当前处理行的行号
+		working_index += 1
 
 		# 跳过空行
 		if working_line == "":
 			continue
 
-		working_index += 1
 		result.append(address_dict.parsed_format) # 增加一项地址分析结果空结构
 
 		# 1. 分析城市
@@ -36,31 +47,89 @@ def parse_address(input_filename, output_filename=""):
 			# 在原文开头查找城市模式
 			if working_line[:len(city)] == city: # 找到城市
 				working_line = working_line[len(city):] # 分离并去掉城市信息
-				if working_line[:1] == '市':
-					working_line = working_line[1:] # 去除额外的"市"字
+				working_line = remove_initial_char_if_exist(working_line, "市") # 去除额外的"市"字
 
 		# 2. 分析行政区划
+
 		# 加载区划列表
 		for district in address_dict.districts:
 
 			# 在原文的靠前部分查找区划模式
-			if working_line.find(district,0,6) != -1: # 找到区划
+			if working_line.find(district,0,5) != -1: # 找到区划
 				result[working_index]['区'] = district # Parse区划
 				working_line = working_line[len(district):] # 分离区划
 
+				# 查找是否计算为旧有区划
 				for deprecated_district in address_dict.deprecated_districts: # 查找旧区划名称
 					if result[working_index]['区'] == deprecated_district[0]: # 找到旧区划
 						result[working_index]['区'] = deprecated_district[1]  # 转换为新区划
-						working_line = working_line[len(deprecated_district[1]):] # 分离区划
 
-				if working_line[:1] == '区':
-					working_line = working_line[1:] # 去除额外的"区"字
+				working_line = remove_initial_char_if_exist(working_line, "区") # 去除额外的"区"字
 
+				break # 找到区划即可结束找区循环
+
+		# 3. 分析楼号
+
+		# 加载楼号终止词
+		for building_stopword in address_dict.building_stopwords:
+			# 楼号正则模式
+			building_pattern = re.compile("[0-9A-Za-z]*" + building_stopword)
+			building = building_pattern.search(working_line)
+
+			if building: # 匹配到模式
+				result[working_index]['楼号'] = building.group(0) # Parse楼号
+				working_line = re.sub(building_pattern, "[楼号位置]", working_line, count=1) # 标志楼号位置
+
+				result[working_index]['~街道和小区'] = working_line.split("[楼号位置]")[0] # 分离楼号前部分
+
+				result[working_index]['~单元和门牌'] = working_line.split("[楼号位置]")[1] # 分离楼号后部分
+
+				working_line = working_line.replace("[楼号位置]","") # 去除楼号位置标志
 				break
 
-		print(input_lines[working_index][:],
+		# 4. 分析街道
+		for street_stopword in address_dict.street_stopwords:
+			# 街道正则模式
+			street_pattern = re.compile(".*" + street_stopword)
+			# 此处必须贪婪匹配
+			street = street_pattern.search(working_line)
+
+			if street: # 匹配到模式
+				result[working_index]['街道'] = street.group(0) # Parse街道
+				working_line = re.sub(street_pattern, "", working_line) # 去除街道信息
+				break
+
+		# 5. 分析小区
+		if result[working_index]['~街道和小区'] and result[working_index]['街道']:
+			# 街道和小区部分,去除街道即为小区
+			result[working_index]['小区'] = result[working_index]['~街道和小区'].replace(result[working_index]['街道'], "")
+
+		# 6. 分析单元和门牌
+		if result[working_index]['~单元和门牌']:
+			# 去除无意义开头标记
+			result[working_index]['~单元和门牌'] = remove_initial_char_if_exist(result[working_index]['~单元和门牌'], "#" )
+			result[working_index]['~单元和门牌'] = remove_initial_char_if_exist(result[working_index]['~单元和门牌'], "-" )
+
+			# 如果未找到"-"标记,全计入门牌
+			if result[working_index]['~单元和门牌'].find("-") == -1:
+				result[working_index]['门牌'] = result[working_index]['~单元和门牌']
+			# 如果找到"-"标记,分隔
+			else:
+				result[working_index]['单元'] = result[working_index]['~单元和门牌'].split("-")[0]
+				result[working_index]['门牌'] = result[working_index]['~单元和门牌'].split("-")[1]
+
+		# 本行工作临时输出
+		print('\n\n[原文]', input_lines[working_index],
 			  '\n[区]', result[working_index]['区'],
-			  '\n[剩余工作]', working_line,
+			  '\n[街道]', result[working_index]['街道'],
+			  '\n[小区]', result[working_index]['小区'],
+			  '\n[楼号]', result[working_index]['楼号'],
+			  '\n[单元]', result[working_index]['单元'],
+			  '\n[门牌]', result[working_index]['门牌'],
+			  '\n\n[附加信息]',
+			  '\n[~街道和小区]', result[working_index]['~街道和小区'],
+			  '\n[~单元和门牌]', result[working_index]['~单元和门牌'],
+			  '\n[working_line]', working_line,
 			  '\n'
 			  )
 
