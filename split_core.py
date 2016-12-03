@@ -24,6 +24,9 @@ def split_core(input_filename, separator, output_filename=""):
 	# 分词
 	
 	split_lines = []
+
+	# 载入自定义词典
+	jieba.load_userdict("./test_dicts/dict1.txt")
 	
 	for input_line in input_lines:
 		if input_line != "":

@@ -17,7 +17,7 @@ def analyse_weight(input_filename, output_filename=""):
 	input_lines = read_file_to_array(input_filename)
 
 	# 分析
-	result = jieba.analyse.extract_tags(", ".join(input_lines), topK=20, withWeight=True)
+	result = jieba.analyse.textrank(", ".join(input_lines), topK=500, withWeight=True)
 
 	# 输出
 
