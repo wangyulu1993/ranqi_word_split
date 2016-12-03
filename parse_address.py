@@ -112,16 +112,20 @@ def parse_address(input_filename, output_filename=""):
 		result[working_index]['~单元和门牌'] = remove_initial_char_if_exist(result[working_index]['~单元和门牌'], "#" )
 		result[working_index]['~单元和门牌'] = remove_initial_char_if_exist(result[working_index]['~单元和门牌'], "-" )
 
-		# 如果未找到"-"标记,全计入门牌
-		if result[working_index]['~单元和门牌'].find("-") == -1:
-			result[working_index]['门牌'] = result[working_index]['~单元和门牌']
 		# 如果找到"-"标记,分隔
-		else:
+		if result[working_index]['~单元和门牌'].find("-") != -1:
 			result[working_index]['单元'] = result[working_index]['~单元和门牌'].split("-")[0]
 			result[working_index]['门牌'] = result[working_index]['~单元和门牌'].split("-")[1]
+		# 如果找到"单元"标记,分隔
+		if result[working_index]['~单元和门牌'].find("单元") != -1:
+			result[working_index]['单元'] = result[working_index]['~单元和门牌'].split("单元")[0]
+			result[working_index]['门牌'] = result[working_index]['~单元和门牌'].split("单元")[1]
+		# 如果未找到任何标记,全计入门牌
+		else:
+			result[working_index]['门牌'] = result[working_index]['~单元和门牌']
 
 		# 本行工作结果输出
-		line_1 = '\n\n[原文]\n' + input_lines[working_index]\
+		line_1 = '\n[原文]\n' + input_lines[working_index]\
 				 + '\n[区]' + result[working_index]['区']\
 				 + '\n[街道]' + result[working_index]['街道']\
 				 + '\n[小区]' + result[working_index]['小区']\
