@@ -4,7 +4,9 @@
 
 ## 依赖
 
-* fxsjy/jieba
+* Python3
+
+* github.com/fxsjy/jieba
 
 ## 项目结构
 
