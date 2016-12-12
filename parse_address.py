@@ -152,4 +152,5 @@ def parse_address(input_filename, output_filename=""):
 # 命令行运行入口函数
 # 支持通过命令行下形如 python parse_address input_filename output_filename 直接调用本函数
 if __name__ == "__main__":
-	parse_address(*sys.argv[1:])
+	#parse_address(*sys.argv[1:])
+	parse_address("test.txt", "output_test1")
